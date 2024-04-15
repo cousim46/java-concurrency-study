@@ -57,3 +57,54 @@ try { //try-catch문으로 예외초리를 해주어야함.
 - 동기화 메서드 영역에서 수면중인 스레드는 획득한 모니터 락을 잃지 않고 계속 유지한다.
 - sleep()중인 스레드에게 인터럽트가 발생할 경우 현재 스레드는 대기에서 해제되고 실행상태로 전환되어 예외를 처리하게 된다.
 - 스레드의 수면시간은 OS 스케줄러 및 시스템 기능에 따라 제한되기 때문에 정확성이 보장되지 않으며 시스템의 부하가 많고 적음에 따라 지정한 수면시간과 차이가 날 수 있다.
+
+
+# join
+## 개요
+- join() 메서드는 한 스레드가 다른 스레드가 종료될떄까지 실행을 중지하고 대기상태에 들어갔다가 스레드가 종료되면 실행대기 상태로 전환된다.
+- 스레드의 순서를 제어하거나 다른 스레드의 작업을 기다려야 하거나 순차적인 흐름을 구성하고자 할 때 사용할 수 있다.
+- Object 클래스의 wait() 네이티브 메서드로 연결되며 시스템 콜을 통해 커널모드로 수행한다. 내부적으로 wait() & notify() 흐름을 가지고 제어한다.
+
+## API 및 예외처리
+- void join() throws InterruptedException
+  - 스레드의 작업이 종료될때까지 대기 상태를 유지
+- void join(long millis) throws InterruptedException
+  - 지정한 밀리초 시간동안 스레드의 대기 상태를 유지
+  - 밀리초에 대한 인수 값은 음수가 될 수 없으며 음수 일 경우 InterruptedException이 발생
+- void join(long millis, int nanos) throws InterruptedException
+  - 지정한 밀리초에 나노초를 더한 시간동안 스레드의 대기 상태를 유지
+  - 나노초의 범위는 0에서 999999
+- InterruptedException
+  - 대기중인 스레드가 인터럽트 될 경우 InterruptedException 예외가 발생
+  - 다른 스레드는 join()을 수행중인 스레드에게 인터럽트, 즉 중단(멈춤) 신호를 보내 수 있음
+  - InterruptedException 예외가 발생하면 스레드는 대기 상태에서 실행대기 상태로 전환되어 실행상태를 기다린다.
+
+기본 코드 방식
+```java
+public static void main(String[] args) {
+    Runnable r = new MyRunnable();
+    Thread thread = new Thread(r);
+    try { // try/catch 문으로 예외 처리해주어야함
+        thread.join(); // 메인 스레드는 thread의 작업이 종료될때까지 일시정지
+    }catch (InterruptedException e) {
+        //인터럽트 발생시 예외 처리 필요
+    }
+}
+```
+
+## join() 작동방식
+- wait() & notify()
+
+![img_5.png](img_5.png)
+
+- interrupt() 발생
+
+![img_6.png](img_6.png)
+
+## join() 작동방식 정리
+- join()을 실행하면 OS 스케줄러는 join()을 호출한 스레드를 대기상태로 전환하고 호출 대상 스레드에게 CPU를 사용하도록 한다.
+- 호출 대상 스레드의 작업이 종료되면 join()을 호출한 스레드는 실행대기 상태로 전환되고 CPU가 실행을 재개할때까지 기다린다.
+- join()을 호출한 스레드가 실행 대기에서 실행 상태가 되면 그 스레드는 남은 지점부터 실행을 다시 시작한다.
+- 호출 대상 스레드가 여러 개일경우 각 스레드의 작업이 종료될때까지 join()을 호출한 스레드는 대기와 실행을 재개하는 흐름을 반복한다.
+- join()을 호출한 스레드가 인터럽트 되면 해당 스레드는 대기에서 해제되고 실행상태로 전환되어 예외를 처리하게 된다.
+
